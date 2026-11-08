@@ -96,8 +96,12 @@
   <div id="fmtBox">
   <h2>Формат</h2>
   <div class="grid g2" id="fmt">
-    <button class="opt on" data-v="tiktok"><div class="shape"><i style="width:36px;height:64px"></i></div><b>Вертикально 9:16</b><span>TikTok, Shorts, Reels</span></button>
+    <button class="opt on" data-v="tiktok"><div class="shape"><i style="width:36px;height:64px;background:linear-gradient(#0b0b10 34%,#1d3a44 34%,#3a1d2a 66%,#0b0b10 66%)"></i></div><b>Вертикально 9:16</b><span>игра по ширине, размытый фон</span></button>
+    <button class="opt" data-v="zoom"><div class="shape"><i style="width:36px;height:64px;background:linear-gradient(#0b0b10 22%,#1d3a44 22%,#3a1d2a 78%,#0b0b10 78%)"></i></div><b>Игра крупнее</b><span>вертикально, края обрезаны</span></button>
     <button class="opt" data-v="original"><div class="shape"><i style="width:92px;height:52px"></i></div><b>Как на стриме</b><span>горизонтально, 1080p60</span></button>
+    <button class="opt" data-v="live_windows"><div class="shape" style="background:linear-gradient(#7cb4ff,#cfe6ff)"><i style="width:30px;height:38px;border:2px solid #3b6fd4;background:#1d3a44;border-top-width:7px"></i></div><b>Стиль «Windows»</b><span>окна на облаках, хук диалогом</span></button>
+    <button class="opt" data-v="live_neon"><div class="shape"><i style="width:30px;height:38px;border:2px solid #ff4dd8;box-shadow:0 0 10px #ff4dd8, 0 0 4px #25f4ee inset"></i></div><b>Стиль «Неон»</b><span>светящаяся рамка, тёмный фон</span></button>
+    <button class="opt" data-v="live_meme"><div class="shape" style="background:#fff"><i style="width:44px;height:34px;border:0;margin-top:22px"></i></div><b>Стиль «Мем»</b><span>белая шапка с чёрным текстом</span></button>
   </div>
 
   </div>
@@ -151,7 +155,7 @@
   function sync() {
     const choose = st.svc === "clips" || st.svc === "kills", epic = st.svc === "epic";
     show("modeBox", choose); show("countBox", choose && st.mode === "auto");
-    show("lenBox", !epic); show("fmtBox", !epic); show("subBox", !epic);
+    show("lenBox", !epic); show("fmtBox", !epic); show("subBox", !epic && !st.fmt.startsWith("live_"));
     const ok = SVC_GAMES[st.svc];
     document.querySelectorAll("#game button.opt").forEach(b => { b.disabled = !ok.includes(b.dataset.v); });
     if (!ok.includes(st.game)) document.querySelector('#game [data-v="dota2"]').click();
