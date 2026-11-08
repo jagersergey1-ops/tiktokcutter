@@ -53,9 +53,10 @@
 
   <h2>Услуга</h2>
   <div class="grid" id="svc">
-    <button class="opt on" data-v="clips"><b>Клипы из стрима</b><span>смешные, эпичные и громкие моменты: крики, смех, реакции</span></button>
-    <button class="opt" data-v="kills"><b>Все мои убийства</b><span>клипы вокруг каждого убийства — Dota 2 и CS2</span></button>
-    <button class="opt" data-v="find"><b>Найти момент по слову</b><span>обработаю запись, а вы напишете слово или время</span></button>
+    <button class="opt on" data-v="clips"><b>Лучшие моменты стрима</b><span>Слушаю и смотрю весь стрим: распознаю речь, ищу смех, крики, «не может быть», всплески громкости и драки. Из самых сильных мест делаю клипы с субтитрами — фраза не обрезается на полуслове.</span></button>
+    <button class="opt" data-v="kills"><b>Все мои убийства</b><span>Читаю ваш счёт убийств на экране (Dota 2) или ленту убийств (CS2). Каждое убийство или серию — Double, Triple, Ultra Kill — режу отдельным клипом, видно всю драку.</span></button>
+    <button class="opt" data-v="epic"><b>Эпик-монтаж катки</b><span>Все ваши убийства за катку в одном вертикальном ролике: замедление на килле, зум-удар, тряска, надписи KILL #N, в начале лучшая серия, в конце итог K/D/A. Пока для Dota 2.</span></button>
+    <button class="opt" data-v="find"><b>Найти момент по слову</b><span>Скачиваю запись и распознаю речь. Пишете слово или фразу — покажу, где она прозвучала, и вырежу клип. Или просто укажите время.</span></button>
   </div>
 
   <h2>Игра</h2>
@@ -63,6 +64,14 @@
     <button class="opt center on" data-v="dota2"><b>Dota 2</b></button>
     <button class="opt center" data-v="cs2"><b>CS2</b></button>
     <button class="opt center" data-v="other"><b>Другая</b><span>GTA, WoT…</span></button>
+  </div>
+
+  <div id="modeBox">
+    <h2>Как выбрать моменты</h2>
+    <div class="grid g2" id="mode">
+      <button class="opt on" data-v="auto"><b>Бот выберет сам</b><span>пришлю лучшие клипы сразу</span></button>
+      <button class="opt" data-v="pick"><b>Выберу сам</b><span>пришлю до 12 найденных моментов с кадрами — отметите нужные</span></button>
+    </div>
   </div>
 
   <div id="countBox">
@@ -74,12 +83,26 @@
     </div>
   </div>
 
+  <div id="lenBox">
+  <h2>Длина клипа</h2>
+  <div class="grid" id="length" style="grid-template-columns:repeat(4,1fr)">
+    <button class="opt center" data-v="15"><b>15 с</b></button>
+    <button class="opt center on" data-v="30"><b>30 с</b></button>
+    <button class="opt center" data-v="45"><b>45 с</b></button>
+    <button class="opt center" data-v="60"><b>60 с</b></button>
+  </div>
+  </div>
+
+  <div id="fmtBox">
   <h2>Формат</h2>
   <div class="grid g2" id="fmt">
     <button class="opt on" data-v="tiktok"><div class="shape"><i style="width:36px;height:64px"></i></div><b>Вертикально 9:16</b><span>TikTok, Shorts, Reels</span></button>
     <button class="opt" data-v="original"><div class="shape"><i style="width:92px;height:52px"></i></div><b>Как на стриме</b><span>горизонтально, 1080p60</span></button>
   </div>
 
+  </div>
+
+  <div id="subBox">
   <h2>Субтитры</h2>
   <div class="grid g3 subs" id="style">
     <button class="opt on" data-v="bold"><span class="sp bold">ВОТ ЭТО ДА</span></button>
@@ -91,6 +114,7 @@
     <button class="opt" data-v="neon"><span class="sp neon">ВОТ ЭТО ДА</span></button>
     <button class="opt" data-v="clean"><span class="sp clean">Вот это да</span></button>
     <button class="opt" data-v="none"><span class="sp none">Без субтитров</span></button>
+  </div>
   </div>
 
   <h2>Ссылка на запись стрима</h2>
@@ -105,7 +129,8 @@
 <script>
   const tg = window.Telegram && window.Telegram.WebApp;
   const inTg = !!(tg && tg.initData !== undefined && tg.platform && tg.platform !== "unknown");
-  const st = {svc: "clips", game: "dota2", count: 5, fmt: "tiktok", style: "bold"};
+  const st = {svc: "clips", game: "dota2", mode: "auto", count: 5, length: 30, fmt: "tiktok", style: "bold"};
+  const SVC_GAMES = {clips: ["dota2", "cs2", "other"], kills: ["dota2", "cs2"], epic: ["dota2"], find: ["dota2", "cs2", "other"]};
   const URL_RE = /https?:\/\/(?:www\.|m\.)?(?:twitch\.tv|youtube\.com|youtu\.be|vkvideo\.ru|vk\.com|kick\.com|dashboard\.twitch\.tv)\/\S+/i;
 
   function group(id, key, cast) {
@@ -119,13 +144,17 @@
       sync();
     }));
   }
-  group("svc", "svc"); group("game", "game"); group("count", "count", Number); group("fmt", "fmt"); group("style", "style");
+  group("svc", "svc"); group("game", "game"); group("mode", "mode"); group("count", "count", Number);
+  group("length", "length", Number); group("fmt", "fmt"); group("style", "style");
 
+  const show = (id, on) => { document.getElementById(id).style.display = on ? "" : "none"; };
   function sync() {
-    document.getElementById("countBox").style.display = st.svc === "find" ? "none" : "";
-    const other = document.querySelector('#game [data-v="other"]');
-    other.disabled = st.svc === "kills";                       // убийства видны только в Dota 2 и CS2
-    if (other.disabled && st.game === "other") document.querySelector('#game [data-v="dota2"]').click();
+    const choose = st.svc === "clips" || st.svc === "kills", epic = st.svc === "epic";
+    show("modeBox", choose); show("countBox", choose && st.mode === "auto");
+    show("lenBox", !epic); show("fmtBox", !epic); show("subBox", !epic);
+    const ok = SVC_GAMES[st.svc];
+    document.querySelectorAll("#game button.opt").forEach(b => { b.disabled = !ok.includes(b.dataset.v); });
+    if (!ok.includes(st.game)) document.querySelector('#game [data-v="dota2"]').click();
   }
 
   function order() {
@@ -133,7 +162,8 @@
     const err = document.getElementById("err");
     if (!URL_RE.test(url)) { err.textContent = "Вставьте ссылку на запись стрима: Twitch, YouTube, VK или Kick."; return; }
     err.textContent = "";
-    const data = {v: 1, svc: st.svc, game: st.game, count: st.svc === "find" ? 0 : st.count, profile: st.fmt, style: st.style, url};
+    const data = {v: 2, svc: st.svc, game: st.game, mode: st.mode, count: st.count, length: st.length,
+      profile: st.fmt, style: st.style, url};
     if (inTg) { tg.sendData(JSON.stringify(data)); }
     else { err.textContent = "Откройте эту форму из Telegram-бота — кнопкой «Заказать нарезку» под полем сообщения."; }
   }
