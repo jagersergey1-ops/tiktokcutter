@@ -56,14 +56,17 @@
     <button class="opt on" data-v="clips"><b>Лучшие моменты стрима</b><span>Слушаю и смотрю весь стрим: распознаю речь, ищу смех, крики, «не может быть», всплески громкости и драки. Из самых сильных мест делаю клипы с субтитрами — фраза не обрезается на полуслове.</span></button>
     <button class="opt" data-v="kills"><b>Все мои убийства</b><span>Читаю ваш счёт убийств на экране (Dota 2) или ленту убийств (CS2). Каждое убийство или серию — Double, Triple, Ultra Kill — режу отдельным клипом, видно всю драку.</span></button>
     <button class="opt" data-v="epic"><b>Эпик-монтаж катки</b><span>Все ваши убийства за катку в одном вертикальном ролике: замедление на килле, зум-удар, тряска, надписи KILL #N, в начале лучшая серия, в конце итог K/D/A. Пока для Dota 2.</span></button>
+    <button class="opt" data-v="talk"><b>Разговорный стрим</b><span>Для стримов-общения (Just Chatting, подкасты, реакции): ищу шутки, смех и эмоциональные фразы, режу по паузам между словами и вырезаю паузы внутри фраз. Сверху хук, снизу караоке-субтитры, 5 стилей оформления.</span></button>
     <button class="opt" data-v="find"><b>Найти момент по слову</b><span>Скачиваю запись и распознаю речь. Пишете слово или фразу — покажу, где она прозвучала, и вырежу клип. Или просто укажите время.</span></button>
   </div>
 
+  <div id="gameBox">
   <h2>Игра</h2>
   <div class="grid g3" id="game">
     <button class="opt center on" data-v="dota2"><b>Dota 2</b></button>
     <button class="opt center" data-v="cs2"><b>CS2</b></button>
     <button class="opt center" data-v="other"><b>Другая</b><span>GTA, WoT…</span></button>
+  </div>
   </div>
 
   <div id="modeBox">
@@ -101,6 +104,8 @@
     <button class="opt" data-v="original"><div class="shape"><i style="width:92px;height:52px"></i></div><b>Как на стриме</b><span>горизонтально, 1080p60</span></button>
     <button class="opt" data-v="live_windows"><div class="shape" style="background:linear-gradient(#7cb4ff,#cfe6ff)"><i style="width:30px;height:38px;border:2px solid #3b6fd4;background:#1d3a44;border-top-width:7px"></i></div><b>Стиль «Windows»</b><span>окна на облаках, хук диалогом</span></button>
     <button class="opt" data-v="live_neon"><div class="shape"><i style="width:30px;height:38px;border:2px solid #ff4dd8;box-shadow:0 0 10px #ff4dd8, 0 0 4px #25f4ee inset"></i></div><b>Стиль «Неон»</b><span>светящаяся рамка, тёмный фон</span></button>
+    <button class="opt talkonly" data-v="live_clean"><div class="shape"><i style="width:36px;height:64px;background:linear-gradient(#2a2a35 15%,#3a1d2a 15%,#1d3a44 85%,#2a2a35 85%)"></i></div><b>Стиль «Чистый»</b><span>кадр крупно на размытом фоне</span></button>
+    <button class="opt talkonly" data-v="live_podcast"><div class="shape"><i style="width:36px;height:64px;background:radial-gradient(circle at 50% 38%,#c9a07a 0 22%,#1d3a44 23%)"></i></div><b>Стиль «Подкаст»</b><span>лицо на весь экран</span></button>
     <button class="opt" data-v="live_meme"><div class="shape" style="background:#fff"><i style="width:44px;height:34px;border:0;margin-top:22px"></i></div><b>Стиль «Мем»</b><span>белая шапка с чёрным текстом</span></button>
   </div>
 
@@ -134,7 +139,7 @@
   const tg = window.Telegram && window.Telegram.WebApp;
   const inTg = !!(tg && tg.initData !== undefined && tg.platform && tg.platform !== "unknown");
   const st = {svc: "clips", game: "dota2", mode: "auto", count: 5, length: 30, fmt: "tiktok", style: "bold"};
-  const SVC_GAMES = {clips: ["dota2", "cs2", "other"], kills: ["dota2", "cs2"], epic: ["dota2"], find: ["dota2", "cs2", "other"]};
+  const SVC_GAMES = {clips: ["dota2", "cs2", "other"], kills: ["dota2", "cs2"], epic: ["dota2"], talk: ["other"], find: ["dota2", "cs2", "other"]};
   const URL_RE = /https?:\/\/(?:www\.|m\.)?(?:twitch\.tv|youtube\.com|youtu\.be|vkvideo\.ru|vk\.com|kick\.com|dashboard\.twitch\.tv)\/\S+/i;
 
   function group(id, key, cast) {
@@ -153,7 +158,15 @@
 
   const show = (id, on) => { document.getElementById(id).style.display = on ? "" : "none"; };
   function sync() {
-    const choose = st.svc === "clips" || st.svc === "kills", epic = st.svc === "epic";
+    const choose = ["clips", "kills", "talk"].includes(st.svc), epic = st.svc === "epic", talk = st.svc === "talk";
+    show("gameBox", !talk);
+    // разговорный стрим - только стили LIVE; остальные услуги - без «Чистого» и «Подкаста»
+    document.querySelectorAll("#fmt button.opt").forEach(b => {
+      const live = b.dataset.v.startsWith("live_"), only = b.classList.contains("talkonly");
+      b.style.display = (talk ? live : !only) ? "" : "none";
+    });
+    if (talk && !st.fmt.startsWith("live_")) document.querySelector('#fmt [data-v="live_clean"]').click();
+    if (!talk && document.querySelector(`#fmt [data-v="${st.fmt}"]`).classList.contains("talkonly")) document.querySelector('#fmt [data-v="tiktok"]').click();
     show("modeBox", choose); show("countBox", choose && st.mode === "auto");
     show("lenBox", !epic); show("fmtBox", !epic); show("subBox", !epic && !st.fmt.startsWith("live_"));
     const ok = SVC_GAMES[st.svc];
