@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TikTok Cutter — заказ нарезки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* Мини-приложение Telegram-бота TikTok Cutter: форма заказа. Данные уходят боту через Telegram.WebApp.sendData. */
+  :root { --bg: #07070a; --card: #111118; --line: #23232d; --text: #f2f2f5; --muted: #a6a6b4; --cyan: #25f4ee; --pink: #fe2c55; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px 110px; }
+  h1 { margin: 0; font-size: 24px; letter-spacing: -.3px; }
+  h1 .t { color: var(--cyan); } h1 .k { color: var(--pink); }
+  .lead { color: var(--muted); margin: 4px 0 18px; font-size: 14px; }
+  h2 { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 22px 0 10px; font-weight: 700; }
+  .grid { display: grid; gap: 10px; }
+  .g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); }
+  button.opt { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; min-height: 48px; padding: 12px 14px;
+    border-radius: 14px; background: var(--card); border: 1.5px solid var(--line); cursor: pointer; transition: border-color .15s, background .15s; }
+  button.opt b { font-size: 15px; } button.opt span { color: var(--muted); font-size: 12.5px; }
+  button.opt.on { border-color: var(--cyan); background: #0f1d22; box-shadow: 0 0 0 1px var(--cyan) inset; }
+  button.opt:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+  button.opt.center { align-items: center; justify-content: center; text-align: center; }
+  button.opt[disabled] { opacity: .35; cursor: default; }
+  .shape { height: 74px; border-radius: 10px; background: #0b0b10; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .shape i { display: block; border-radius: 4px; background: linear-gradient(135deg, #1d3a44, #3a1d2a); border: 1.5px solid var(--cyan); }
+  .subs button.opt { min-height: 64px; align-items: center; justify-content: center; text-align: center; padding: 8px; }
+  .sp { font-weight: 900; font-size: 15px; letter-spacing: .3px; }
+  .sp.bold { color: #fff; text-shadow: 0 0 2px #000, 2px 2px 0 #000; }
+  .sp.karaoke em, .sp.karaoke_green em { font-style: normal; }
+  .sp.karaoke { color: #fff; } .sp.karaoke em { color: #ffe500; }
+  .sp.karaoke_green { color: #fff; } .sp.karaoke_green em { color: #3cff40; }
+  .sp.pop { font-size: 20px; color: #fff; } .sp.beast { font-family: Impact, "Arial Black", sans-serif; color: #ffe800; font-size: 19px; font-weight: 400; }
+  .sp.box { background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; } .sp.neon { color: #ffd6ff; text-shadow: 0 0 8px #ff4dd8; }
+  .sp.clean { font-weight: 600; color: #fff; } .sp.none { color: var(--muted); font-weight: 600; }
+  input.url { width: 100%; min-height: 50px; padding: 0 14px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card);
+    color: var(--text); font: inherit; outline: none; }
+  input.url:focus { border-color: var(--cyan); }
+  .hint { color: var(--muted); font-size: 12.5px; margin-top: 8px; } .err { color: var(--pink); font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .send { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); }
+  .send button { width: 100%; max-width: 528px; display: block; margin: 0 auto; min-height: 52px; border: 0; border-radius: 16px; background: var(--pink);
+    color: #fff; font: 800 16px Inter, Arial, sans-serif; cursor: pointer; }
+  .tg .send { display: none; }       /* внутри Telegram - нативная кнопка внизу */
+  .note { margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: var(--card); color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="t">Tik</span><span class="k">Tok</span> Cutter</h1>
+  <p class="lead">Пришлите запись стрима — бот найдёт лучшие моменты и пришлёт готовые ролики с субтитрами.</p>
+
+  <h2>Услуга</h2>
+  <div class="grid" id="svc">
+    <button class="opt on" data-v="clips"><b>Клипы из стрима</b><span>смешные, эпичные и громкие моменты: крики, смех, реакции</span></button>
+    <button class="opt" data-v="kills"><b>Все мои убийства</b><span>клипы вокруг каждого убийства — Dota 2 и CS2</span></button>
+    <button class="opt" data-v="find"><b>Найти момент по слову</b><span>обработаю запись, а вы напишете слово или время</span></button>
+  </div>
+
+  <h2>Игра</h2>
+  <div class="grid g3" id="game">
+    <button class="opt center on" data-v="dota2"><b>Dota 2</b></button>
+    <button class="opt center" data-v="cs2"><b>CS2</b></button>
+    <button class="opt center" data-v="other"><b>Другая</b><span>GTA, WoT…</span></button>
+  </div>
+
+  <div id="countBox">
+    <h2>Сколько клипов</h2>
+    <div class="grid g3" id="count">
+      <button class="opt center" data-v="3"><b>3</b></button>
+      <button class="opt center on" data-v="5"><b>5</b></button>
+      <button class="opt center" data-v="10"><b>10</b></button>
+    </div>
+  </div>
+
+  <h2>Формат</h2>
+  <div class="grid g2" id="fmt">
+    <button class="opt on" data-v="tiktok"><div class="shape"><i style="width:36px;height:64px"></i></div><b>Вертикально 9:16</b><span>TikTok, Shorts, Reels</span></button>
+    <button class="opt" data-v="original"><div class="shape"><i style="width:92px;height:52px"></i></div><b>Как на стриме</b><span>горизонтально, 1080p60</span></button>
+  </div>
+
+  <h2>Субтитры</h2>
+  <div class="grid g3 subs" id="style">
+    <button class="opt on" data-v="bold"><span class="sp bold">ВОТ ЭТО ДА</span></button>
+    <button class="opt" data-v="karaoke"><span class="sp karaoke">ВОТ <em>ЭТО</em> ДА</span></button>
+    <button class="opt" data-v="karaoke_green"><span class="sp karaoke_green">ВОТ <em>ЭТО</em> ДА</span></button>
+    <button class="opt" data-v="pop"><span class="sp pop">ЭТО</span></button>
+    <button class="opt" data-v="beast"><span class="sp beast">ВОТ ЭТО ДА</span></button>
+    <button class="opt" data-v="box"><span class="sp box">вот это да</span></button>
+    <button class="opt" data-v="neon"><span class="sp neon">ВОТ ЭТО ДА</span></button>
+    <button class="opt" data-v="clean"><span class="sp clean">Вот это да</span></button>
+    <button class="opt" data-v="none"><span class="sp none">Без субтитров</span></button>
+  </div>
+
+  <h2>Ссылка на запись стрима</h2>
+  <input class="url" id="url" type="url" inputmode="url" placeholder="https://www.twitch.tv/videos/…" autocomplete="off" aria-label="Ссылка на запись стрима">
+  <div class="hint">Twitch, YouTube, VK или Kick. Нужна запись (VOD), не идущий эфир.</div>
+  <div class="err" id="err" role="alert"></div>
+
+  <div class="note">После заказа бот пришлёт номер заказа и будет писать, на каком этапе работа. Готовые клипы придут в этот чат.</div>
+</div>
+<div class="send"><button id="sendBtn" type="button">Заказать нарезку</button></div>
+
+<script>
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTg = !!(tg && tg.initData !== undefined && tg.platform && tg.platform !== "unknown");
+  const st = {svc: "clips", game: "dota2", count: 5, fmt: "tiktok", style: "bold"};
+  const URL_RE = /https?:\/\/(?:www\.|m\.)?(?:twitch\.tv|youtube\.com|youtu\.be|vkvideo\.ru|vk\.com|kick\.com|dashboard\.twitch\.tv)\/\S+/i;
+
+  function group(id, key, cast) {
+    const box = document.getElementById(id);
+    box.querySelectorAll("button.opt").forEach(b => b.addEventListener("click", () => {
+      if (b.disabled) return;
+      box.querySelectorAll("button.opt").forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); });
+      b.classList.add("on"); b.setAttribute("aria-pressed", "true");
+      st[key] = cast ? cast(b.dataset.v) : b.dataset.v;
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      sync();
+    }));
+  }
+  group("svc", "svc"); group("game", "game"); group("count", "count", Number); group("fmt", "fmt"); group("style", "style");
+
+  function sync() {
+    document.getElementById("countBox").style.display = st.svc === "find" ? "none" : "";
+    const other = document.querySelector('#game [data-v="other"]');
+    other.disabled = st.svc === "kills";                       // убийства видны только в Dota 2 и CS2
+    if (other.disabled && st.game === "other") document.querySelector('#game [data-v="dota2"]').click();
+  }
+
+  function order() {
+    const url = document.getElementById("url").value.trim();
+    const err = document.getElementById("err");
+    if (!URL_RE.test(url)) { err.textContent = "Вставьте ссылку на запись стрима: Twitch, YouTube, VK или Kick."; return; }
+    err.textContent = "";
+    const data = {v: 1, svc: st.svc, game: st.game, count: st.svc === "find" ? 0 : st.count, profile: st.fmt, style: st.style, url};
+    if (inTg) { tg.sendData(JSON.stringify(data)); }
+    else { err.textContent = "Откройте эту форму из Telegram-бота — кнопкой «Заказать нарезку» под полем сообщения."; }
+  }
+
+  if (inTg) {
+    document.body.classList.add("tg");
+    tg.ready(); tg.expand();
+    try { tg.setHeaderColor("#07070a"); tg.setBackgroundColor("#07070a"); } catch (e) {}
+    tg.MainButton.setParams({text: "Заказать нарезку", color: "#fe2c55", text_color: "#ffffff"});
+    tg.MainButton.show();
+    tg.MainButton.onClick(order);
+  }
+  document.getElementById("sendBtn").addEventListener("click", order);
+  document.querySelectorAll("button.opt").forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on") ? "true" : "false"));
+  sync();
+</script>
+</body>
+</html>
